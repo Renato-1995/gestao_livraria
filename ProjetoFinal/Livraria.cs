@@ -1,0 +1,862 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Lptrabalhopratico
+{
+    internal class Livraria
+    {
+        //Atributos
+        public int Id { get; set; }
+        public string Codigo { get; set; }
+        public string Titulo { get; set; }
+        public string Autor { get; set; }
+        public string Genero { get; set; }
+        public int ISBN { get; set; }
+        public int Stock { get; set; }
+        public int Quantidade { get; set; }
+        public double Preco { get; set; }
+        public double Total { get; set; }
+        public double Novototal { get; set; }
+        public double Novoiva { get; set; }
+        public double Iva { get; set; }
+        public int UserId { get; set; }
+        public string Funcao { get; set; }
+        public string Password { get; set; }
+
+
+        //Construtor parametrizado para livros
+        public Livraria(int id, string codigo, string titulo, string autor, string genero, int isbn, int stock, double preco, double iva)
+        {
+            Id = id;
+            Codigo = codigo;
+            Titulo = titulo;
+            Autor = autor;
+            Genero = genero;
+            ISBN = isbn;
+            Stock = stock;
+            Preco = preco;
+            Iva = iva;
+        }
+
+        //Construtor parametrizado para utilizadores 
+        public Livraria(int userid, string funcao, string password)
+        {
+            UserId = userid;
+            Funcao = funcao;
+            Password = password;
+        }
+
+        #region Criação de Listas
+
+        // criação de duas listas: uma com livros, outra com os utilizadores
+        public List<Livraria> Utilizador = new List<Livraria>();
+        public List<Livraria> Livros = new List<Livraria>();
+
+
+        //Criação de instâncias para as listas (adicionar os utilizadores do sistema e os livros em stock)
+        public Livraria()
+        {
+            Utilizador.Add(new Livraria(UserId = 1, Funcao = "Gerente", Password = "123gerente"));
+            Utilizador.Add(new Livraria(UserId = 2, Funcao = "Repositor", Password = "222repositor"));
+            Utilizador.Add(new Livraria(UserId = 3, Funcao = "Caixa", Password = "999caixa"));
+
+            Livros.Add(new Livraria(1, "Z01", "O Rapaz do Pijama às Riscas", "John Boyne", "Ação", 978972415, 100, 13.30, 0.06));
+            Livros.Add(new Livraria(2, "Z02", "O Último Grimm", "Álvaro Magalhães", "Romance", 978976567, 4, 14.40, 0.06));
+            Livros.Add(new Livraria(3, "Z03", "As fadas Verdes", "Matilde Rosa Araújo", "Poesia", 987345678, 5, 8.85, 0.23));
+        }
+
+        #endregion
+
+        #region Utilizadores/Login
+        //Criação de um método para um Sistema de Login do Utilizador (número de utilizador UserId e password)
+        public void EntrarUtilizador()
+        {
+            try
+            {
+                // Solicitar número de usuário e password
+                Console.Write("Número de Utilizador: ");
+                int UserId = Convert.ToInt32(Console.ReadLine());
+
+                Console.Write("Password: ");
+                string Password = Console.ReadLine();
+
+                // Autenticar utilizador da livraria
+                Livraria utilizadorAutenticado = Utilizador.Find(u => u.UserId == UserId && u.Password == Password);
+
+                if (utilizadorAutenticado != null)
+                {
+                    Console.Clear();
+                    Console.WriteLine($"Bem-vindo, {utilizadorAutenticado.Funcao}!");
+                    Menu(utilizadorAutenticado.UserId); // Chama o menu principal após o login bem-sucedido
+                }
+                else
+                {
+                    Console.WriteLine("Falha no Login. Número de Utilizador ou password incorretos. TENTE NOVAMENTE!\n");
+                    EntrarUtilizador();
+                }
+
+            }
+
+            catch (FormatException)
+            {
+                Console.WriteLine("Erro! Introduza números.");
+            }
+        }
+
+
+        #endregion
+
+        #region Criação de Menu
+
+        //Criação de um método para simular um menu e tornar o sistema intuitivo para o utilizador
+        public void Menu(int UserId)
+        {
+            //Menu
+            Console.WriteLine("\n::::::POR FAVOR ESCOLHA UMA DAS SEGUINTES OPÇÕES::::::");
+            Console.WriteLine("1 - Registar Livros");
+            Console.WriteLine("2 - Atualizar Livro");
+            Console.WriteLine("3 - Consultar informações do livro, usando código");
+            Console.WriteLine("4 - Consultar livro por género");
+            Console.WriteLine("5 - Consultar livro por Autor");
+            Console.WriteLine("6 - Compra de Livros");
+            Console.WriteLine("7 - Vender Livros");
+            Console.WriteLine("8 - Consultar stock geral");
+            Console.WriteLine("9 - Consultar o total de livros vendidos e a sua receita");
+            Console.WriteLine("10 - Listar utilizadores do sistema");
+            Console.WriteLine("11 - Criar/Remover Utilizadores");
+            Console.WriteLine("12 - Sair");
+            Console.WriteLine("::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
+
+            // Variável para escolher a opção no menu
+            Console.Write("OPÇÃO: ");
+            int escolheropcao = Convert.ToInt32(Console.ReadLine());
+
+            switch (escolheropcao)
+            {
+                case 1:
+                    if (UserId == 2) //Só o repositor pode adicionar produtos ao stock
+                    {
+                        RegistarLivro();
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("\n-----------------------------------------------------------------------------------");
+                        Console.WriteLine("Não tem permissões para aceder a este módulo. Consulte o administrador do sistema.");
+                        Console.WriteLine("-----------------------------------------------------------------------------------\n");
+                        Menu(UserId);
+                        break;
+                    }                   
+
+                case 2:
+                    Atualizarlivro();
+                    break;
+
+                case 3:
+                    ConsultarCodigo();
+                    break;
+
+                case 4:
+                    ListarGenero();
+                    break;
+
+                case 5:
+                    ListarAutor();
+                    break;
+
+                case 6:
+                    if (UserId == 2) //Só o repositor pode adicionar produtos ao stock
+                    {
+                    ComprarLivros();
+                    break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("\n-----------------------------------------------------------------------------------");
+                        Console.WriteLine("Não tem permissões para aceder a este módulo. Consulte o administrador do sistema.");
+                        Console.WriteLine("-----------------------------------------------------------------------------------\n");
+                        Menu(UserId);
+                        break;
+                    }
+
+
+                case 7:
+                    if (UserId == 2) //Apenas o gerente e o caixa podem vender
+                    {
+                        Console.WriteLine("\n-----------------------------------------------------------------------------------");
+                        Console.WriteLine("Não tem permissões para aceder a este módulo. Consulte o administrador do sistema.");
+                        Console.WriteLine("-----------------------------------------------------------------------------------\n");
+                        Menu(UserId);
+                        break;
+                    }
+                    else
+                    {
+                        VenderLivro();
+                        break;
+
+                    }
+
+                case 8:
+                    Consultarstockgeral();
+                    break;
+
+
+                case 9:
+                    if (UserId == 2) //Apenas o gerente e o caixa podem consultar as receitas e vendas
+                    {
+                        Console.WriteLine("\n-----------------------------------------------------------------------------------");
+                        Console.WriteLine("Não tem permissões para aceder a este módulo. Consulte o administrador do sistema.");
+                        Console.WriteLine("-----------------------------------------------------------------------------------\n");
+                        Menu(UserId);
+                        break;
+                    }
+                    else
+                    {
+                        ConsultarVendasReceitas();
+                        break;
+                    }
+
+
+
+                case 10:
+                    if (UserId == 2 || UserId==3) //só o gerente pode consultar a lista e credenciais dos utilizadores
+                    {
+                        Console.WriteLine("\n-----------------------------------------------------------------------------------");
+                        Console.WriteLine("Não tem permissões para aceder a este módulo. Consulte o administrador do sistema.");
+                        Console.WriteLine("-----------------------------------------------------------------------------------\n");
+                        Menu(UserId);
+                        break;
+                    }
+                    else if (UserId == 1)
+                    {
+                        ListarUtilizador();
+                    }
+                    break;
+
+
+                case 11:
+                    if (UserId == 2 || UserId == 3)
+                    {
+                        Console.WriteLine("\n-----------------------------------------------------------------------------------");
+                        Console.WriteLine("Não tem permissões para aceder a este módulo. Consulte o administrador do sistema.");
+                        Console.WriteLine("-----------------------------------------------------------------------------------\n");
+                        Menu(UserId);
+                        break;
+                    }
+                    else 
+                    {
+                        CriarRemoverUtilizador();
+                        break;
+                    }
+
+
+                case 12:
+                    Console.WriteLine("Saiu do Sistema. Tenha um bom dia!");
+                    break;
+
+                default:
+                    Console.WriteLine("Opção inválida!");
+                    break;
+            }
+        }
+
+        #endregion
+
+        /// /////// ///
+        /// MÉTODOS ///
+        /// /////// ///
+
+        #region RegistarLivro
+
+        //Metodo para registar um novo livro
+        public void RegistarLivro()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("\nOpção 1 Escolhida | REGISTAR LIVRO");
+            //instanciar um novo objeto da classe Livraria para registar um novo livro
+            Livraria registarlivro = new Livraria();
+            //Recurso à estrutura while para registar um novo livro
+            //enquanto o código do livro inserido for diferente de "0", o user pode continuar a adicionar livros
+            while (registarlivro.Codigo != "0")
+            {
+                Console.WriteLine("Insira o código do livro (ou '0' para sair): ");
+                registarlivro.Codigo = Convert.ToString(Console.ReadLine());
+
+                //Recurso ao 'if' para voltar ao menu, caso o utilizador digite '0'
+                if (registarlivro.Codigo == "0")
+                {
+                    break;
+                }
+                // Verificar se o livro já existe na lista com base no codigo
+                //Any => devolve 'true' se a condição 'livro => livro.Codigo == registarlivro.Codigo' for verificada.
+                if (Livros.Any(livro => livro.Codigo == registarlivro.Codigo))
+                {
+                    Console.WriteLine("Já existe um livro com esse código. Por favor, tente novamente.");
+                    continue;
+                }
+
+                Console.WriteLine("Qual o seu id:  ");
+                registarlivro.Id = Convert.ToInt32(Console.ReadLine());
+
+                // Verificar se o livro já existe na lista com base no ID
+                //Any => devolve 'true' se a condição 'livro => livro.Id == registarlivro.Id' for verificada.
+                //Ou seja, se a condição do ID do livro inserido ser igual ao id do livro da lista
+                if (Livros.Any(livro => livro.Id == registarlivro.Id))
+                {
+                    Console.WriteLine("Já existe um livro com esse ID. Por favor, tente novamente.");
+                    continue;
+                }
+
+                Console.WriteLine("Insira o título:  ");
+                registarlivro.Titulo = Convert.ToString(Console.ReadLine());
+                Console.WriteLine("Insira o autor:  ");
+                registarlivro.Autor = Convert.ToString(Console.ReadLine());
+                Console.WriteLine("ISBN:  ");
+                registarlivro.ISBN = Convert.ToInt32(Console.ReadLine());
+                Console.WriteLine("Insira o género:  ");
+                registarlivro.Genero = Convert.ToString(Console.ReadLine());
+                Console.WriteLine("Qual o preço?  ");
+                registarlivro.Preco = Convert.ToDouble(Console.ReadLine());
+                Console.WriteLine("Qual a taxa de Iva(6%, 23%)?  ");
+                registarlivro.Iva = Convert.ToDouble(Console.ReadLine());
+                Console.WriteLine("Qual a quantidade a registar?  ");
+                registarlivro.Stock = Convert.ToInt32(Console.ReadLine());
+
+                Console.WriteLine("Livro registado com sucesso!");
+                Livros.Add(registarlivro);
+
+            }
+            Console.Clear();
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador ==> daí estar fora do loop)
+        }
+        #endregion
+
+        #region AtualizarLivro
+        public void Atualizarlivro()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("\nOpção 2 Escolhida | ATUALIZAR LIVRO\n");
+            //uso do "while(true)" para que as nossas condições sejam cumpridas ou interrompidas pela instrução "break"
+            while (true)
+            {
+                //inicia a variavel 'id' que vai armazenar o ID do livro a alterar
+                var id = 0;
+                Console.Write("Qual o ID que pretende alterar? (ou '0' para sair)");
+
+                //Convertemos o 'id' inserido em um número inteiro
+                // O uso do 'out' serve para armazenar o valor convertido na variavel 'id'
+                if (int.TryParse(Console.ReadLine(), out id))
+                {
+                    //Recurso ao 'if' para voltar ao menu, caso o utilizador digite '0'
+                    if (id == 0)
+                    {
+                        break;
+                    }
+
+                    //criação de variavel livro para armazenar o resultado pela busca do livro na lista
+                    //uso da função Find para encontrar o livro na lista
+                    var Livro = Livros.Find(livro => livro.Id == id);
+
+                    //verificar se o ID inserido está na nossa lista
+                    if (Livro != null)
+                    {
+                        Console.Write("Novo código: ");
+                        Livro.Codigo = Convert.ToString(Console.ReadLine());
+                        Console.Write("Novo Título: ");
+                        Livro.Titulo = Convert.ToString(Console.ReadLine());
+                        Console.Write("Novo Autor: ");
+                        Livro.Autor = Convert.ToString(Console.ReadLine());
+                        Console.Write("Novo Género: ");
+                        Livro.Genero = Convert.ToString(Console.ReadLine());
+
+                        //recurso ao bloco try-catch para tratar exceções ao converter o ISBN
+                        try
+                        {
+                            Console.Write("Novo ISBN: ");
+                            Livro.ISBN = Convert.ToInt32(Console.ReadLine());
+                        }
+                        catch (FormatException)
+                        {
+                            Console.WriteLine("Por favor, insira um valor numérico para o ISBN!");
+                            continue; // Continua para a próxima iteração do loop
+                        }
+
+                 //       Console.Write("Novo Stock: ");
+                 //       Livro.Stock = Convert.ToInt32(Console.ReadLine());
+                        Console.Write("Novo Preço: ");
+                        Livro.Preco = Convert.ToDouble(Console.ReadLine());
+                        Console.Write("Novo Iva: ");
+                        Livro.Iva = Convert.ToDouble(Console.ReadLine());
+                        Console.WriteLine();
+                        Console.WriteLine("Livro atualizado com sucesso!");
+
+                        //uso do foreach para percorrer todos os livros da lista "Livros" e os exibir na consola após atualizações
+                        //O 'l' é uma variável temporaria que representa cada elemento individual da lista  durante a iteração do loop
+                        foreach (Livraria Livr in Livros)
+                        {
+                            Console.WriteLine($"Código: {Livr.Codigo} | Título: {Livr.Titulo} | Autor: {Livr.Autor} | Género: {Livr.Genero} | ISBN: {Livr.ISBN}  | Preço: {Livr.Preco} | Iva: {Livr.Iva}");
+                        }
+                    }
+                    else //se o ID do livro não for encontrado na lista
+                    {
+                        Console.WriteLine("O ID inserido não é valido! Tente Novamente!");
+                        break;
+                    }
+                }
+            }
+            Console.Clear();
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+            
+        }
+
+        #endregion
+
+        #region ConsultarLivro_Código
+
+        // Criação de um método para cosultar informações de livro pelo seu código
+        public void ConsultarCodigo()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("Opção 3 Escolhida | CONSULTAR LIVROS ATRÁVES DO CÓDIGO");
+            //recurso ao try-catch para lidar com exceções
+            try
+            {
+                //recurso ao while para permitir ao utilizador consultar informações de livros pelo código, até digitar 'sair' para encerrar o programa
+                while (true)
+                {
+                    //criação de variável codigo "vazia" para armazenar o codigo que o utilizador digitar
+                    var code = "";
+                    Console.WriteLine("Introduza o código do livro que pretende consultar: (ou 'sair' para encerrar)");
+                    code = Convert.ToString(Console.ReadLine());
+
+                    //Recurso ao 'if' para voltar ao menu, caso o utilizador digite 'sair'
+                    if (code == "sair")
+                    {
+                        break;
+                    }
+                    //criação de variavel livro para armazenar o resultado pela busca do livro na lista
+                    //uso da função Find para encontrar o livro na lista
+                    var Livro = Livros.Find(livro => livro.Codigo == code);
+
+                    // Se o código inserido corresponder a algum livro da lista, são mostradas as informações do livro
+                    if (Livro != null)
+                    {
+                        Console.WriteLine($"\nCódigo: {Livro.Codigo} \nTítulo: {Livro.Titulo} \nAutor: {Livro.Autor} \nGénero: {Livro.Genero} \nISBN: {Livro.ISBN} \nStock: {Livro.Stock} \nPreço: {Livro.Preco}€ \nIva: {Livro.Iva}%\n");
+                    }
+                    //Se o código do livro não for encontrado na lista.
+                    // O programa pede para introduzir novamente um código (até que o utilizador digite 'sair')
+                    else
+                    {
+                        Console.WriteLine("O código inserido não é válido. Tente novamente!");
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ocorreu um erro ao consultar o código: {ex.Message}");
+            }
+            Console.Clear();
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+
+        }
+        #endregion
+
+        #region ConsultarLivro_género
+
+        //método para listar os livros por género
+        public void ListarGenero()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("Opção 4 Escolhida | CONSULTAR LIVROS ATRÁVES DO GÉNERO");
+            // Recurso à estrutura While para permitir que o utilizador consulte vários livros consecutivamente até decidir sair.
+            while (true)
+            {
+                //Questionar o utilizador qual o género que pretende consultar.
+                var genero = "";
+                Console.Write("Insira o género que deseja consultar: (ou escreva 'sair' para encerrar o programa)");
+                genero = Convert.ToString(Console.ReadLine());
+
+
+                //Recurso ao 'if' para voltar ao menu, caso o utilizador digite 'sair'
+                if (genero == "sair")
+                {
+                    break;
+                }
+
+                //criação de variavel livro para armazenar o resultado pela busca dos livros do genero que o utilizador pretende
+                //uso da função Find para encontrar o livro na lista
+                var Livro = Livros.Find(livro => livro.Genero == genero);
+
+                // Se o Género inserido corresponder a algum livro da lista, são mostradas as informações do livro
+                if (Livro != null)
+                {
+                    Console.WriteLine($"\nCódigo: {Livro.Codigo} \nTítulo: {Livro.Titulo} \nAutor: {Livro.Autor} \nGénero: {Livro.Genero} \nISBN: {Livro.ISBN} \nStock: {Livro.Stock} \nPreço: {Livro.Preco}€ \nIva: {Livro.Iva}%\n");
+                }
+                //Se o género do livro digitado não for encontrado na lista.
+                // O programa pede para introduzir novamente um género (até que o utilizador digite 'sair')
+                else
+                {
+                    Console.WriteLine("O género introduzido não foi encontrado na lista. Tente novamente!");
+                }
+            }
+            Console.Clear();
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+
+        }
+
+        #endregion
+
+        #region ConsultarLivro_Autor
+        //método para listar os livros por autor
+        public void ListarAutor()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("Opção 5 Escolhida | CONSULTAR LIVROS ATRÁVES DO AUTOR");
+            // Recurso à estrutura While para permitir que o utilizador consulte livros de vários autores consecutivamente até decidir sair.
+            while (true)
+            {
+                //Questionar o utilizador qual o autor que pretende consultar.
+                var autor = "";
+                Console.Write("\nEscreva o nome do autor que pretende consultar: (ou escreva 'sair' para encerrar o programa)");
+                autor = Convert.ToString(Console.ReadLine());
+
+                //Recurso ao 'if' para voltar ao menu, caso o utilizador digite 'sair'
+                if (autor == "sair")
+                {
+                    break;
+                }
+
+                //criação de variavel livro para armazenar os livros do autor que o utilizador pretende consultar
+                //uso da função Find para encontrar os livros do autor na lista
+                var Livro = Livros.Find(livro => livro.Autor == autor);
+
+                // Se o autor tiver algum livro na nossa lista, são mostradas as informações do(s) livro(s)
+                if (Livro != null)
+                {
+                    Console.WriteLine($"\nCódigo: {Livro.Codigo} \nTítulo: {Livro.Titulo} \nAutor: {Livro.Autor} \nGénero: {Livro.Genero} \nISBN: {Livro.ISBN} \nStock: {Livro.Stock} \nPreço: {Livro.Preco}€ \nIva: {Livro.Iva}%\n");
+                }
+                //Se o Autor do livro digitado não for encontrado na lista.
+                // O programa pede para introduzir novamente um Autor  (até que o utilizador digite 'sair')
+                else
+                {
+                    Console.WriteLine("O nome do autor introduzido não foi encontrado na lista. Tente novamente!");
+                }
+            }
+            Console.Clear();
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+        }
+
+        #endregion
+
+        #region CompraLivros
+        //Método para comprar Livros (acrescentar ao stock)
+        public void ComprarLivros()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("Opção 6 Escolhida | COMPRAR LIVROS - ACRESCENTAR  STOCK ");
+            while (true)
+            {
+
+                //Questionar o utilizador qual o id do livro que pretende comprar
+                Console.Write("\nQual o ID do livro que pretende? (ou escreva '0' para encerrar o programa\n");
+                int id = Convert.ToInt32(Console.ReadLine());
+
+                //Recurso ao 'if' para voltar ao menu, caso o utilizador digite '0'
+                if (id == 0)
+                {
+                    break;
+                }
+
+                //Utilização da função Find para encontrar os livros por ID na nossa lista de livros
+                var livro = Livros.Find(livro => livro.Id == id);
+
+                //Se o livro com o ID não existir, mostra a mensagem de ID invalido e pede novamente ao utilizador
+                if (livro == null)
+                {
+                    Console.WriteLine("ID inválido! Livro não encontrado.");
+                    continue;
+                }
+
+                Console.Write($"Que quantidade deseja comprar para {livro.Titulo}? ");
+
+                //utilização do if para garantir que a quantidade inserida é um número inteiro positivo
+                // '!int.TryParse(Console.ReadLine()' ==> verifica se a conversão do número inserido não foi bem sucedida, ou seja o utilizador não inseriu um número inteiro
+                if (!int.TryParse(Console.ReadLine(), out int Quantidade) || Quantidade <= 0)
+                {
+                    Console.WriteLine("\nQuantidade inválida! Por favor, insira um número inteiro positivo.");
+                    continue;
+                }
+
+                // Adiciona a quantidade ao stock do livro
+                //livro.Stock = livro.Stock + livro.Quantidade;
+                livro.Stock += Quantidade;
+
+                Console.WriteLine($"\nCompra bem-sucedida! Stock atualizado para {livro.Stock} unidades.\n");
+
+                Console.WriteLine($"Temos então: \nCódigo: {livro.Codigo} \nTítulo: {livro.Titulo} \nAutor: {livro.Autor} \nGénero: {livro.Genero} \nISBN: {livro.ISBN} \nStock: {livro.Stock} \nPreço: {livro.Preco}€ \nIva: {livro.Iva}%\n");
+
+            }
+            Console.Clear();
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+        }
+
+        #endregion
+
+        #region VenderLivros
+        //método para venda de livros (reduz ao stock)
+        public void VenderLivro()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("\nOpção 7 Escolhida | MODO DE VENDA DE LIVROS ");
+            while (true)
+            {
+                //Solicitar ao utilizador para inserir o id do livro que deseja vender
+                Console.Write("\nQual o ID do livro que deseja vender? (ou '0' para encerrar\n");
+                int id = Convert.ToInt32(Console.ReadLine());
+
+                //Recurso ao 'if' para voltar ao menu, caso o utilizador digite '0'
+                if (id == 0)
+                {
+                    Console.Write("O programa será encerrado!");
+                    break;
+                }
+
+                //Utilização da função Find para encontrar os livros por ID na nossa lista de livros
+                var livro = Livros.Find(livro => livro.Id == id);
+
+                //Se o livro com o ID não existir, mostra a mensagem de ID invalido e pede novamente ao utilizador
+                if (livro == null)
+                {
+                    Console.WriteLine("ID inválido! Livro não encontrado.");
+                    continue; //Pede novamente o ID
+                }
+
+                //Questionar o utilizador que quantidade deseja vender
+                Console.Write("Quantidade a ser vendida: ");
+                livro.Quantidade = Convert.ToInt32(Console.ReadLine());
+                if (livro.Stock < livro.Quantidade)
+                {
+                    Console.WriteLine("ERRO! A quantidade a ser vendida excede o número de livros em stock");
+                    continue; //Pede novamente a quantidade
+                }
+                else
+                {
+                    //reduz o stock do livro da lista em relação à quantidade a ser vendida
+                    livro.Stock -= livro.Quantidade;
+                }
+
+                //Calculo do valor sem IVA
+                livro.Total = (livro.Quantidade * livro.Preco);
+                //Calculo do valor do IVA
+                livro.Novoiva = (livro.Total * livro.Iva);
+                //Soma do valor do IVA ao total
+                livro.Novototal = (livro.Total + livro.Novoiva);
+
+
+                Console.WriteLine(":::::::::::::::::::::RESUMO DE VENDA::::::::::::::::::::::");
+
+                //Aplicar o desconto de 10%, caso o valor seja igual ou superior a 50 euros
+                if (livro.Novototal < 50)
+                {
+                    //Apresenta o valor total sem desconto, arredondado a duas casas decimais
+                    Console.WriteLine($"Subtotal: {Math.Round(livro.Total, 2)} euros");
+                    Console.WriteLine($"Valor do IVA: {Math.Round(livro.Novoiva, 2)} euros");
+                    Console.WriteLine($"Desconto: 0%");
+                }
+
+                else
+                {
+                    livro.Novototal *= 0.9; //Aplica desconto de 10% ao total 
+
+                    Console.WriteLine($"Subtotal: {Math.Round(livro.Total, 2)} euros");
+                    Console.WriteLine($"Valor do IVA: {Math.Round(livro.Novoiva, 2)} euros");
+                    Console.WriteLine($"Desconto: 10%");
+                }
+
+                Console.WriteLine($"Total: {Math.Round(livro.Novototal, 2)} euros");
+
+                Console.WriteLine(":::::::::::::VENDA CONCLUÍDA COM SUCESSO:::::::::::::::::::");
+
+            }
+            Console.Clear();
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+        }
+
+        #endregion
+
+        #region ConsultarStockGeral
+        //método para consultar todos os livros em stock
+        public void Consultarstockgeral()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("Opção 8 Escolhida | CONSULTAR O STOCK ");
+
+            //Recurso à estrutura 'foreach' para iterar os elementos da nossa lista ('Livros') que se encontra dentro da nossa classe 'Livraria'
+            //Durante a iteração, cada objeto é representado por 'livros'
+            foreach (Livraria livros in Livros)
+            {
+                //dá informações apenas do id, título, autor,  e o stock disponível dos livros da lista
+                Console.WriteLine("-------------------------------------------------------------------------------------------------");
+                Console.WriteLine($"ID: {livros.Id} | Título: {livros.Titulo} | Autor: {livros.Autor} | Stock: {livros.Stock}");
+                Console.WriteLine("-------------------------------------------------------------------------------------------------");
+            }
+
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+
+        }
+        #endregion
+
+        #region ConsultarVendas
+        //método para consultar os livros vendidos e a sua receita
+        public void ConsultarVendasReceitas()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("Opção 9 Escolhida | CONSULTAR O TOTAL DE LIVROS VENDIDOS E A SUA RECEITA\n");
+
+            try
+            {
+                while (true)
+                {
+                    int id = 0; //variavel de inicialização, onde será armazenado o valor que o utilizador digitar
+                                //Questionar o utilizador sobre o id do livro que pretende consultar a receita e o total vendido
+                    Console.Write("Insira o id do livro que deseja consultar o total vendido e a respetiva receita: (0 para encerrar)\n");
+                    id = Convert.ToInt32(Console.ReadLine());
+
+                    //Recurso ao 'if' para voltar ao menu, caso o utilizador digite '0'
+                    if (id == 0)
+                    {
+                        break;
+                    }
+
+                    //criação de variavel livro para armazenar o resultado pela busca do livro na lista
+                    //uso da função Find para encontrar o livro na lista
+                    var Livro = Livros.Find(livro => livro.Id == id);
+
+                    // Se o ID inserido corresponder a algum livro da lista:
+                    if (Livro != null)
+                    {
+                        int totallivrosvendidos = 0; //variavel inicia com zero. Armazena a quantidade de livros vendidos.
+                                                     //Adicionar à variavel a quantidade vendida
+                        totallivrosvendidos += Livro.Quantidade;
+                        double TotalReceita = Math.Round(Livro.Total, 2);
+
+                        Console.WriteLine($"Livro ID: {Livro.Id}");
+                        Console.WriteLine($"Título: {Livro.Titulo}");
+                        Console.WriteLine($"Quantidade Vendida: {totallivrosvendidos}");
+                        Console.WriteLine($"Receita Total: {TotalReceita} euros");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Livro não encontrado.");
+                    }
+                }
+            }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ocorreu um erro:{ex.Message}");
+            }
+            Console.Clear();
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+
+        }
+        #endregion
+
+        #region ListarUtilizadores
+        public void ListarUtilizador()
+        {
+            // Frase para mostrar a opção escolhida
+            Console.WriteLine("Opção 10 Escolhida | LISTAR UTILIZADORES DO SISTEMA ");
+
+            //Recurso à estrutura 'foreach' para iterar os elementos da nossa lista ('Utilizador') que se encontra dentro da nossa classe 'Livraria'
+            //Durante a iteração, cada objeto é representado por 'user'
+            foreach (Livraria user in Utilizador)
+            {
+                //dá informações dos utilizadores do sistema
+                Console.WriteLine($"ID de utilizador: {user.UserId} | Password: {user.Password} | Função: {user.Funcao}.");
+            }
+
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+
+        }
+
+        #endregion
+
+        #region Criar/RemoverUtilizadores
+        //metodo para criar ou remover utilizadores do sistema
+        public void CriarRemoverUtilizador()
+        {
+         while (true) { 
+            Console.WriteLine("\nOpção 11 Escolhida | CRIAR / REMOVER UTILIZADORES\n");
+            // Solicita ao utilizador que digite entre 'Criar', 'Remover' ou 'Sair'.
+            Console.WriteLine("Escolha uma opção ('Criar' 'Remover' e Sair para encerrar): ");
+            string Opcao = Convert.ToString(Console.ReadLine());
+
+            
+                //Se a opção for igual a criar, começa a criação do utilizador
+                if (Opcao == "Criar")
+                {
+                    //instancia um novo objeto da classe livraria
+                    Livraria novoutilizador = new Livraria();
+                    Console.Write("Número de Utilizador: ");
+                    novoutilizador.UserId = Convert.ToInt32(Console.ReadLine());
+                    if (novoutilizador.UserId == 0)
+                    {
+                        Console.WriteLine("Dados Inválidos");
+                        break;
+                    }
+                    Console.Write("Função: ");
+                    novoutilizador.Funcao = Convert.ToString(Console.ReadLine());
+                    Console.Write("Password: ");
+                    novoutilizador.Password = Convert.ToString(Console.ReadLine());
+                    Console.WriteLine("\nUtilizador criado com sucesso!");
+
+                    Console.WriteLine("Número de Utilizador: " + novoutilizador.UserId + " | Função: " + novoutilizador.Funcao + " | " + "Password: " + novoutilizador.Password + "\n");
+
+                    // Adiciona o novo utilizador à lista de utilizadores.
+                    Utilizador.Add(novoutilizador);
+
+
+                }
+                //Se a opção for igual a remover, pede o id do utilizador que quer remover e no fim, o programa remove o utilizador com o id que o gerente colocou
+                else if (Opcao == "Remover")
+                {
+                    Console.WriteLine("Insira o ID do utilizador que deseja remover: ");
+                    int idRemover = Convert.ToInt32(Console.ReadLine());
+
+                    // Procura o utilizador na lista e remove-o se o mesmo estiver na lista.
+                    //'Utilizador.Count' é o número total de elementos na lista Utilizador.
+
+                    for (int i = 0; i < Utilizador.Count; i++)
+                    {
+                        //Verifica se o UserId do utilizador na posição i da lista 'Utilizador' é igual ao valor armazenado na variável idRemover (digitado pelo user).
+                        if (Utilizador[i].UserId == idRemover)
+                        {
+                            //remove o elemento na posição especificada pelo índice i na lista.
+                            Utilizador.RemoveAt(i);
+                            Console.WriteLine("Utilizador removido com sucesso!");
+                            break;
+                        }
+                    }
+
+                }
+                //Recurso ao 'if' para voltar ao menu, caso o utilizador digite 'sair'
+                if (Opcao == "Sair")
+                {
+                    break;
+                }
+            }
+            Console.Clear();
+            Menu(UserId); // quando termina o loop ele volta ao menu (mantendo a sessão iniciada do utilizador)
+        }
+
+
+        #endregion
+
+    }
+}
